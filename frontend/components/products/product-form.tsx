@@ -20,7 +20,7 @@ export function ProductForm({ initialValues, onSubmit, onCancel, isLoading }: Pr
     handleSubmit,
     formState: { errors },
   } = useForm<ProductFormValues>({
-    resolver: zodResolver(productFormSchema),
+    resolver: zodResolver(productFormSchema) as any,
     defaultValues: {
       sku: initialValues?.sku || "",
       name: initialValues?.name || "",

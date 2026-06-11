@@ -44,7 +44,7 @@ export function ProductFilters({
       </div>
       
       <div className="w-full sm:w-[200px]">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
           <SelectTrigger>
             <SelectValue placeholder="Filter by Status" />
           </SelectTrigger>
