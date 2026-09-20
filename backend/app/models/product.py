@@ -29,6 +29,12 @@ class Product(Base):
     current_stock: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     unit_cost: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
     lead_time: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    ordering_cost: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2), nullable=True, default=None
+    )
+    holding_cost_per_unit: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2), nullable=True, default=None
+    )
     supplier: Mapped[str | None] = mapped_column(String(255), nullable=True)
     reorder_point: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     safety_stock: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
