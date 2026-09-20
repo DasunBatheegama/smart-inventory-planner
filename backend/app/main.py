@@ -8,6 +8,7 @@ from app.api.routes.alerts import router as alerts_router
 from app.api.routes.products import router as products_router
 from app.api.routes.sales import router as sales_router
 from app.api.routes.inventory import router as inventory_router
+from app.api.routes.agents import router as agents_router
 
 app = FastAPI(
     title="InventIQ API",
@@ -49,4 +50,8 @@ app.include_router(
 
 app.include_router(
     inventory_router,
+)
+
+app.include_router(
+    agents_router,
 )
