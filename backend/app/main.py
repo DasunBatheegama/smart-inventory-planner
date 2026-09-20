@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api.routes.health import router as health_router
 from app.api.routes.forecast import router as forecast_router
+from app.api.routes.alerts import router as alerts_router
 from app.api.routes.products import router as products_router
 from app.api.routes.sales import router as sales_router
 from app.api.routes.inventory import router as inventory_router
@@ -40,6 +41,10 @@ app.include_router(
 app.include_router(
     sales_router,
     prefix="/api/v1",
+)
+
+app.include_router(
+    alerts_router,
 )
 
 app.include_router(
