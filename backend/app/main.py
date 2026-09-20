@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.api.routes.health import router as health_router
+from app.api.routes.products import router as products_router
 
 app = FastAPI(
     title="InventIQ API",
@@ -20,5 +21,10 @@ app.add_middleware(
 
 app.include_router(
     health_router,
+    prefix="/api/v1",
+)
+
+app.include_router(
+    products_router,
     prefix="/api/v1",
 )
