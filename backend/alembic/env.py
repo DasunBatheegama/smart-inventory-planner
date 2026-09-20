@@ -13,7 +13,7 @@ if str(BASE_DIR) not in sys.path:
 
 from app.config import settings
 from app.db.database import Base
-import app.models.product  # noqa: F401
+import app.models  # noqa: F401
 
 config = context.config
 

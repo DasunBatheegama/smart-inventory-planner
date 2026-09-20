@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import CheckConstraint, DateTime, Integer, Numeric, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
 
@@ -43,3 +43,5 @@ class Product(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+    sales_records = relationship("SalesRecord", back_populates="product")
