@@ -45,3 +45,4 @@ class Product(Base):
     )
 
     sales_records = relationship("SalesRecord", back_populates="product")
+    forecasts = relationship("Forecast", back_populates="product", cascade="all, delete-orphan")
