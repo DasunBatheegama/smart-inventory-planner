@@ -11,9 +11,16 @@ from app.agents.forecast_agent import (
     ForecastAgentResponseError,
     create_forecast_agent,
 )
+from app.agents.insight_agent import (
+    InsightAgent,
+    InsightAgentError,
+    InsightAgentLLMError,
+    InsightAgentProductNotFoundError,
+    InsightAgentResponseError,
+    create_insight_agent,
+)
 from app.agents.inventory_agent import (
     InventoryAgent,
-    InventoryAgentError,
     InventoryAgentLLMError,
     InventoryAgentProductNotFoundError,
     InventoryAgentResponseError,
@@ -23,6 +30,8 @@ from app.db.database import get_db
 from app.schemas.agent import (
     ForecastAgentRequest,
     ForecastAgentResponse,
+    InsightAgentRequest,
+    InsightAgentResponse,
     InventoryAgentRequest,
     InventoryAgentResponse,
 )
@@ -36,6 +45,10 @@ def get_forecast_agent(db: Session = Depends(get_db)) -> ForecastAgent:
 
 def get_inventory_agent(db: Session = Depends(get_db)) -> InventoryAgent:
     return create_inventory_agent(db)
+
+
+def get_insight_agent(db: Session = Depends(get_db)) -> InsightAgent:
+    return create_insight_agent(db)
 
 
 @router.post("/inventory", response_model=InventoryAgentResponse)
@@ -65,4 +78,19 @@ def forecast_agent_endpoint(
     except (ForecastAgentLLMError, ForecastAgentResponseError) as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
     except ForecastAgentError as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+
+@router.post("/insights", response_model=InsightAgentResponse)
+def insight_agent_endpoint(
+    payload: InsightAgentRequest,
+    agent: InsightAgent = Depends(get_insight_agent),
+) -> InsightAgentResponse:
+    try:
+        return agent.invoke(payload.question, product_id=payload.product_id)
+    except InsightAgentProductNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except (InsightAgentLLMError, InsightAgentResponseError) as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+    except InsightAgentError as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
