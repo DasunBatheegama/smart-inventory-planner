@@ -6,6 +6,7 @@ from typing import Any, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.agents.base import BaseAgent
 from app.agents.prompts.insight_prompt import INSIGHT_AGENT_SYSTEM_PROMPT
 from app.agents.tools.alert_tools import (
     AlertToolError,
@@ -160,7 +161,7 @@ def _fallback_narrative(context: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-class InsightAgent:
+class InsightAgent(BaseAgent):
     """Explains current alerts, forecast datacard and inventory health.
 
     The agent only ever explains data gathered by the committed alert,
@@ -169,12 +170,21 @@ class InsightAgent:
     """
 
     def __init__(self, llm_service: LLMService, db: Session) -> None:
+        super().__init__(
+            name="insight_agent",
+            system_prompt=INSIGHT_AGENT_SYSTEM_PROMPT,
+            llm_service=llm_service,
+        )
         self._llm_service = llm_service
         self.db = db
 
     @property
     def llm_service(self) -> LLMService:
         return self._llm_service
+
+    @llm_service.setter
+    def llm_service(self, value: LLMService) -> None:
+        self._llm_service = value
 
     def _context(self, product_id: str | None) -> dict[str, Any]:
         return (

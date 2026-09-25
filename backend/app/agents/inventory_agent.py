@@ -92,7 +92,11 @@ class InventoryAgent(BaseAgent):
         try:
             plans = tool_get_inventory_plans(self.db, product_id=product_id)
             latest_plan = tool_get_latest_plan_for_product(self.db, product_id)
-            recommendation = tool_get_reorder_recommendations(self.db, product_id=product_id)
+            recommendation = [
+                item
+                for item in tool_get_reorder_recommendations(self.db)
+                if item.get("product_id") == product_id
+            ]
         except InventoryToolProductNotFoundError as exc:
             raise InventoryAgentProductNotFoundError(str(exc)) from exc
 

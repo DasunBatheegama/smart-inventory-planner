@@ -26,15 +26,29 @@ from app.agents.inventory_agent import (
     InventoryAgentResponseError,
     create_inventory_agent,
 )
+from app.agents.orchestrator import (
+    AIOrchestrator,
+    OrchestratorError,
+    OrchestratorUnknownAgentError,
+    OrchestratorAgentExecutionError,
+    OrchestratorLLMError,
+    OrchestratorResponseError,
+)
 from app.db.database import get_db
 from app.schemas.agent import (
+    AgentStatusResponse,
+    ChatRequest,
+    ChatResponse,
     ForecastAgentRequest,
     ForecastAgentResponse,
     InsightAgentRequest,
     InsightAgentResponse,
     InventoryAgentRequest,
     InventoryAgentResponse,
+    OrchestratorRequest,
+    OrchestratorResponse,
 )
+from app.services.ai.agent_service import AgentRegistry
 
 router = APIRouter(tags=["Agents"], prefix="/api/v1/agents")
 
@@ -94,3 +108,69 @@ def insight_agent_endpoint(
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
     except InsightAgentError as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+
+def get_orchestrator(db: Session = Depends(get_db)) -> AIOrchestrator:
+    """Build the stage-5B AI orchestrator over the registered agent allowlist.
+
+    Only the three committed factories are registered, so the orchestrator can
+    never execute anything outside this explicit allowlist.
+    """
+    registry = AgentRegistry()
+    registry.register(create_forecast_agent(db))
+    registry.register(create_inventory_agent(db))
+    registry.register(create_insight_agent(db))
+    return AIOrchestrator(registry=registry)
+
+
+@router.post("/orchestrator", response_model=OrchestratorResponse)
+def orchestrator_agent_endpoint(
+    payload: OrchestratorRequest,
+    orchestrator: AIOrchestrator = Depends(get_orchestrator),
+) -> OrchestratorResponse:
+    try:
+        return orchestrator.invoke(payload.message, product_id=payload.product_id)
+    except OrchestratorUnknownAgentError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except OrchestratorLLMError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+    except (OrchestratorAgentExecutionError, OrchestratorResponseError) as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+    except OrchestratorError as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+
+@router.post("/chat", response_model=ChatResponse)
+def chat_endpoint(
+    payload: ChatRequest,
+    orchestrator: AIOrchestrator = Depends(get_orchestrator),
+) -> ChatResponse:
+    try:
+        result = orchestrator.invoke(payload.message, product_id=payload.product_id)
+    except OrchestratorUnknownAgentError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except OrchestratorLLMError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+    except (OrchestratorAgentExecutionError, OrchestratorResponseError) as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+    except OrchestratorError as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+    return ChatResponse(
+        answer=result.summary,
+        agents_used=result.agents_used,
+        supporting_data=result.supporting_data,
+        recommendations=result.recommendations,
+    )
+
+
+@router.get("/status", response_model=AgentStatusResponse)
+def status_endpoint(
+    orchestrator: AIOrchestrator = Depends(get_orchestrator),
+) -> AgentStatusResponse:
+    registered = set(orchestrator.registry.registered_names())
+    return AgentStatusResponse(
+        orchestrator="available",
+        forecast_agent="available" if "forecast_agent" in registered else "unavailable",
+        inventory_agent="available" if "inventory_agent" in registered else "unavailable",
+        insight_agent="available" if "insight_agent" in registered else "unavailable",
+    )

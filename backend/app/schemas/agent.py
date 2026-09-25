@@ -110,6 +110,40 @@ class OrchestratorResponse(BaseModel):
     recommendations: list[str] = Field(default_factory=list)
 
 
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=3, max_length=500)
+    product_id: str | None = None
+
+    @field_validator("message")
+    @classmethod
+    def message_must_not_be_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if len(stripped) < 3:
+            raise ValueError("Message must be at least 3 characters long.")
+        return stripped
+
+    @field_validator("product_id")
+    @classmethod
+    def blank_product_id_to_none(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            return None
+        return value
+
+
+class ChatResponse(BaseModel):
+    answer: str
+    agents_used: list[str] = Field(default_factory=list)
+    supporting_data: dict[str, Any] = Field(default_factory=dict)
+    recommendations: list[str] = Field(default_factory=list)
+
+
+class AgentStatusResponse(BaseModel):
+    orchestrator: str = "available"
+    forecast_agent: str = "available"
+    inventory_agent: str = "available"
+    insight_agent: str = "available"
+
+
 class InsightAgentSupportingData(BaseModel):
     product_id: str | None = None
     alerts: list[dict[str, Any]] = Field(default_factory=list)
