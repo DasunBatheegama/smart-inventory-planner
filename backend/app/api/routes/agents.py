@@ -37,8 +37,6 @@ from app.agents.orchestrator import (
 from app.db.database import get_db
 from app.schemas.agent import (
     AgentStatusResponse,
-    ChatRequest,
-    ChatResponse,
     ForecastAgentRequest,
     ForecastAgentResponse,
     InsightAgentRequest,
@@ -48,7 +46,18 @@ from app.schemas.agent import (
     OrchestratorRequest,
     OrchestratorResponse,
 )
+from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.ai.agent_service import AgentRegistry
+from app.services.ai.chat_service import (
+    ChatConfigurationError,
+    ChatConversationError,
+    ChatLLMError,
+    ChatService,
+    ChatServiceError,
+    ChatTimeoutError,
+    ChatValidationError,
+    ConversationStore,
+)
 
 router = APIRouter(tags=["Agents"], prefix="/api/v1/agents")
 
@@ -140,27 +149,46 @@ def orchestrator_agent_endpoint(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
 
 
+_conversation_store = ConversationStore()
+
+
+def get_chat_service(orchestrator: AIOrchestrator = Depends(get_orchestrator)) -> ChatService:
+    """Build the Stage 6A chat service over the shared orchestrator.
+
+    The conversation store is a module-level singleton so history survives
+    across requests for the lifetime of the process. It is intentionally
+    in-memory for this stage; see app.services.ai.chat_service for details.
+    """
+    return ChatService(orchestrator=orchestrator, store=_conversation_store)
+
+
 @router.post("/chat", response_model=ChatResponse)
 def chat_endpoint(
     payload: ChatRequest,
-    orchestrator: AIOrchestrator = Depends(get_orchestrator),
+    chat_service: ChatService = Depends(get_chat_service),
 ) -> ChatResponse:
     try:
-        result = orchestrator.invoke(payload.message, product_id=payload.product_id)
+        return chat_service.handle(payload)
+    except ChatConversationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except ChatValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
     except OrchestratorUnknownAgentError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except OrchestratorLLMError as exc:
+    except ChatTimeoutError as exc:
+        raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail=str(exc)) from exc
+    except ChatConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        ) from exc
+    except ChatLLMError as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
-    except (OrchestratorAgentExecutionError, OrchestratorResponseError) as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
-    except OrchestratorError as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
-    return ChatResponse(
-        answer=result.summary,
-        agents_used=result.agents_used,
-        supporting_data=result.supporting_data,
-        recommendations=result.recommendations,
-    )
+    except ChatServiceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+        ) from exc
 
 
 @router.get("/status", response_model=AgentStatusResponse)
