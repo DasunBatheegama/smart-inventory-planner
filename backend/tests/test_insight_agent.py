@@ -35,9 +35,9 @@ def _create_product(client: TestClient, sku: str) -> int:
 
 
 def _stock_on_hand(client: TestClient, product_id: int, quantity: int) -> None:
-    response = client.post(
-        "/api/v1/inventory/adjustments",
-        json={"product_id": product_id, "quantity": quantity, "reason": "stocktake"},
+    response = client.put(
+        f"/api/v1/products/{product_id}",
+        json={"current_stock": quantity},
     )
     assert response.status_code == 200, response.text
 

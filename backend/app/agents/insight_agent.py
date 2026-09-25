@@ -6,7 +6,7 @@ from typing import Any, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.agents.base import BaseAgent
+from app.agents.base import BaseAgent, latest_per_product
 from app.agents.prompts.insight_prompt import INSIGHT_AGENT_SYSTEM_PROMPT
 from app.agents.tools.alert_tools import (
     AlertToolError,
@@ -69,9 +69,9 @@ def _gather_all_context(db: Session) -> dict[str, Any]:
     active_alerts = get_active_alerts(db)
     critical_alerts = get_critical_alerts(db)
     alert_summary = get_alert_summary(db)
-    forecasts = get_forecasts(db)
-    inventory_plans = get_inventory_plans(db)
-    reorder_recommendations = get_reorder_recommendations(db)
+    forecasts = latest_per_product(get_forecasts(db))
+    inventory_plans = latest_per_product(get_inventory_plans(db))
+    reorder_recommendations = latest_per_product(get_reorder_recommendations(db))
     inventory_health = get_inventory_health(db)
     return {
         "product_id": None,

@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# InventIQ · Frontend
 
-## Getting Started
+Next.js 16 (Turbopack) + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui.
 
-First, run the development server:
+The AI-assistant chatbot lives at [/dashboard/ai](http://localhost:3000/dashboard/ai)
+and talks to the FastAPI backend at `http://localhost:8000`.
+
+## Routes
+
+| Route                  | Module                                            |
+| ---------------------- | ------------------------------------------------- |
+| `/dashboard`           | Overview                                          |
+| `/dashboard/ai`        | AI inventory assistant (chat)                     |
+| `/dashboard/alerts`    | Generated alerts                                  |
+| `/dashboard/forecasting` | Forecasts                                        |
+| `/dashboard/planning`  | Reorder planning                                  |
+| `/dashboard/products`  | Product catalog                                   |
+| `/dashboard/sales-upload` | Sales CSV upload                               |
+| `/dashboard/settings`  | Settings                                          |
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The backend must be running on `:8000` (see the repository root README). The API
+base URL is resolved in `lib/api-config.ts`:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `NEXT_PUBLIC_API_BASE_URL` if set (static, inlined at build time), else
+  `http://localhost:8000`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## AI assistant architecture
 
-## Learn More
+```
+Chat UI (app/dashboard/ai/page.tsx)
+  └─ aiService.sendChatMessage()        services/ai.service.ts (typed HTTP +
+                                          error mapping, 30s timeout)
+       └─ POST {base}/api/v1/agents/chat
+            → ChatService → AIOrchestrator → forecast/inventory/insight agent
+            → deterministic services → PostgreSQL → structured JSON
+```
 
-To learn more about Next.js, take a look at the following resources:
+- `types/chat.ts` — `ChatMessage`, `ChatRequest`, `ChatResponse` contracts.
+- `lib/api-config.ts` — base URL + chat endpoint and request timeout.
+- `services/ai.service.ts` — HTTP client; every provider/backend status maps to
+  a client-authored friendly message (`STATUS_ERRORS`), so raw backend or LLM
+  error text never reaches the UI.
+- `components/ai/*` — chat window, message bubbles (`agent-indicator`,
+  recommendations), suggested prompts, and the error banner with retry.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Interaction notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Each turn may invoke one or more agents; the UI shows `agents_used` as badges
+  on the assistant message.
+- Repeating the same `conversation_id` across turns enables context.
+- Suggested prompts are written to match the backend's keyword router (see the
+  root README routing table).
 
-## Deploy on Vercel
+## Checks
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run lint     # eslint; 11 pre-existing errors / 23 warnings, none in AI-stage files
+npm run build    # production build (clean, TypeScript passes)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Configuration
+
+| Variable                    | Purpose                          | Default                |
+| --------------------------- | -------------------------------- | ---------------------- |
+| `NEXT_PUBLIC_API_BASE_URL`  | Backend base URL for API calls   | `http://localhost:8000`|
+
+The frontend holds no API keys; the LLM provider key is backend-only.

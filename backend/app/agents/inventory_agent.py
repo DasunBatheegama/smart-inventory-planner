@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.agents.base import BaseAgent
+from app.agents.base import BaseAgent, latest_per_product
 from app.agents.prompts.inventory_prompt import INVENTORY_AGENT_SYSTEM_PROMPT
 from app.agents.tools.inventory_tools import (
     InventoryToolError,
@@ -114,7 +114,9 @@ class InventoryAgent(BaseAgent):
 
     def _all_products_context(self) -> dict[str, Any]:
         health = tool_get_inventory_health(self.db)
-        recommendations = tool_get_reorder_recommendations(self.db)
+        recommendations = latest_per_product(
+            tool_get_reorder_recommendations(self.db)
+        )
         plans = tool_generate_plans_for_all_products(self.db)
         product_ids = sorted({plan["product_id"] for plan in plans})
         if product_ids:

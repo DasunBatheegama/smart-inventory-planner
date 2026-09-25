@@ -198,15 +198,44 @@ class AIOrchestrator:
                 }
                 recommendations.extend(getattr(result, "recommendations", []) or [])
             elif agent_name == "inventory_agent":
+                data = getattr(result, "data", None) or {}
+                latest_plan = data.get("latest_plan")
+                reorder_plans = (
+                    data.get("reorder_recommendations")
+                    or (
+                        [data["reorder_recommendation"]]
+                        if data.get("reorder_recommendation")
+                        else []
+                    )
+                    or []
+                )
                 supporting_data[agent_name] = {
-                    "current_stock": getattr(result, "current_stock", None),
-                    "reorder_point": getattr(result, "reorder_point", None),
-                    "safety_stock": getattr(result, "safety_stock", None),
-                    "recommended_order": getattr(result, "recommended_order", None),
-                    "urgent": getattr(result, "urgent", None),
+                    "current_stock": latest_plan.get("current_stock")
+                    if latest_plan
+                    else data.get("current_stock"),
+                    "reorder_point": latest_plan.get("reorder_point")
+                    if latest_plan
+                    else data.get("reorder_point"),
+                    "safety_stock": latest_plan.get("safety_stock")
+                    if latest_plan
+                    else data.get("safety_stock"),
+                    "recommended_order": latest_plan.get(
+                        "recommended_order_quantity"
+                    )
+                    if latest_plan
+                    else data.get("recommended_order"),
+                    "urgent": list(
+                        dict.fromkeys(
+                            plan.get("product_id")
+                            for plan in reorder_plans
+                            if plan.get("status") in ("reorder_now", "critical")
+                        )
+                    )
+                    or None,
+                    "reorder_recommendations": reorder_plans,
                 }
                 recommendations.extend(
-                    getattr(result, "order_recommendations", []) or []
+                    getattr(result, "recommendations", []) or []
                 )
             else:
                 supporting_data[agent_name] = {
