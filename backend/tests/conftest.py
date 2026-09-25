@@ -14,8 +14,11 @@ if str(BACKEND_ROOT) not in sys.path:
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config import settings
 from app.db.database import Base, SessionLocal, engine, get_db
 from app.main import app
+
+settings.groq_api_key = None
 
 
 def override_get_db():

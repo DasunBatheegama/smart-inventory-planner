@@ -166,12 +166,12 @@ class TestForecastAgent:
 
     def test_missing_api_key_is_safe(self, client, db):
         product = seed_forecast(client, sku="SKU-4006")
-        fake = FakeLLMService(make_narrative(), error=LLMConfigurationError("LLM is not configured. Missing OPENAI_API_KEY."))
+        fake = FakeLLMService(make_narrative(), error=LLMConfigurationError("LLM is not configured. Set the provider API key."))
         agent = build_agent(db, fake)
 
         with pytest.raises(ForecastAgentLLMError) as exc_info:
             agent.invoke("Explain the forecast", product_id=product["id"])
-        assert "OPENAI_API_KEY" in str(exc_info.value)
+        assert "provider API key" in str(exc_info.value)
 
     def test_malformed_llm_output_raises(self, client, db):
         product = seed_forecast(client, sku="SKU-4007")

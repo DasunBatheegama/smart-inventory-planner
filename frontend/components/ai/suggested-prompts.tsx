@@ -15,11 +15,20 @@ interface SuggestedPromptsProps {
 }
 
 const prompts = [
-  { label: "Show low stock products", icon: PackageX },
-  { label: "Explain forecast accuracy", icon: BarChart3 },
-  { label: "Generate purchase recommendations", icon: ShoppingCart },
-  { label: "Show inventory risks", icon: AlertTriangle },
-  { label: "Summarize active alerts", icon: Bell },
+  {
+    label: "Which products need reordering right now?",
+    icon: PackageX,
+  },
+  {
+    label: "Which products are at risk of running out?",
+    icon: AlertTriangle,
+  },
+  { label: "Explain the demand forecast for my products", icon: BarChart3 },
+  {
+    label: "Generate purchase recommendations for the next month",
+    icon: ShoppingCart,
+  },
+  { label: "Summarize the biggest risks in my inventory", icon: Bell },
 ];
 
 export function SuggestedPrompts({

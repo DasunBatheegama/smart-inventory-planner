@@ -4,6 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage as ChatMessageType } from "@/types/chat";
 import { Bot, User } from "lucide-react";
+import { AgentIndicator } from "./agent-indicator";
 import {
   Table,
   TableBody,
@@ -44,8 +45,25 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {isUser ? (
           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
         ) : (
-          <div className="text-sm space-y-2">
-            <FormattedContent content={message.content} />
+          <div className="space-y-3">
+            <div className="text-sm">
+              <FormattedContent content={message.content} />
+            </div>
+            {message.recommendations && message.recommendations.length > 0 && (
+              <div className="rounded-lg border bg-background/60 p-3">
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                  Recommendations
+                </p>
+                <ul className="ml-4 space-y-1.5 list-disc">
+                  {message.recommendations.map((recommendation, index) => (
+                    <li key={index} className="text-sm">
+                      {renderInline(recommendation)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <AgentIndicator agentsUsed={message.agentsUsed} />
           </div>
         )}
         <p

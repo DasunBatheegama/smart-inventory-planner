@@ -42,9 +42,9 @@ class LLMService:
         timeout: float | None = None,
         client: Any | None = None,
     ) -> None:
-        self._api_key = api_key if api_key is not None else settings.openai_api_key
-        self._model = model if model is not None else settings.openai_model
-        self._timeout = timeout if timeout is not None else settings.openai_timeout_seconds
+        self._api_key = api_key if api_key is not None else settings.groq_api_key
+        self._model = model if model is not None else settings.groq_model
+        self._timeout = timeout if timeout is not None else settings.groq_timeout_seconds
         self._client = client
 
     @property
@@ -53,13 +53,17 @@ class LLMService:
 
     def validate_config(self) -> None:
         if not self._api_key:
-            raise LLMConfigurationError("LLM is not configured. Missing OPENAI_API_KEY.")
+            raise LLMConfigurationError("LLM is not configured. Set the provider API key.")
         if not self._model:
-            raise LLMConfigurationError("LLM is not configured. Invalid OPENAI_MODEL.")
+            raise LLMConfigurationError("LLM is not configured. Set a valid provider model.")
 
     def _get_client(self) -> Any:
         if self._client is None:
-            self._client = openai.OpenAI(api_key=self._api_key, timeout=self._timeout)
+            self._client = openai.OpenAI(
+                api_key=self._api_key,
+                timeout=self._timeout,
+                base_url=settings.groq_base_url,
+            )
         return self._client
 
     def complete(self, system_prompt: str, user_message: str) -> str:

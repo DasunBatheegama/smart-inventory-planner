@@ -1,36 +1,24 @@
+export type ChatRole = "user" | "assistant";
+
 export interface ChatMessage {
   id: string;
-  role: "user" | "assistant";
+  role: ChatRole;
   content: string;
   createdAt: string;
+  agentsUsed?: string[];
+  recommendations?: string[];
 }
 
-export interface Conversation {
-  id: string;
-  title: string;
-  lastMessage: string;
-  updatedAt: string;
-  messages: ChatMessage[];
+export interface ChatRequest {
+  message: string;
+  conversation_id?: string;
+  product_id?: string;
 }
 
-export interface AiMetrics {
-  totalProductsAnalyzed: number;
-  activeAlerts: number;
-  inventoryHealthScore: number;
-  forecastAccuracy: number;
-}
-
-export interface InventorySummary {
-  totalProducts: number;
-  inventoryValue: number;
-  activeAlerts: number;
-  reorderRequired: number;
-}
-
-export interface AiRecommendation {
-  id: string;
-  sku: string;
-  productName: string;
-  action: string;
-  daysUntilAction: number;
+export interface ChatResponse {
+  conversation_id: string;
+  answer: string;
+  agents_used: string[];
+  supporting_data: Record<string, unknown> | null;
+  recommendations: string[];
 }

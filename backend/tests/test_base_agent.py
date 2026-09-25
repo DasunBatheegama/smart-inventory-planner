@@ -26,7 +26,7 @@ class MissingKeyLLMService(FakeLLMService):
     def complete(self, system_prompt: str, user_message: str) -> str:
         self.last_system_prompt = system_prompt
         self.last_user_message = user_message
-        raise LLMConfigurationError("LLM is not configured. Missing OPENAI_API_KEY.")
+        raise LLMConfigurationError("LLM is not configured. Set the provider API key.")
 
 
 class TestBaseAgentInitialization:
@@ -57,7 +57,7 @@ class TestBaseAgentInvocation:
             agent.invoke("analyze inventory")
         message = str(exc_info.value)
         assert "inventory-agent" in message
-        assert "OPENAI_API_KEY" in message
+        assert "provider API key" in message
 
     def test_invoke_propagates_non_llm_errors_unchanged(self):
         class ExplodingLLMService(FakeLLMService):

@@ -461,7 +461,7 @@ def test_api_chat_timeout_is_504(chat_client) -> None:
 
 def test_api_chat_unconfigured_ai_is_503(chat_client) -> None:
     client, fake, _store = chat_client
-    fake.fail_next(LLMConfigurationError("OPENAI_API_KEY is not set"))
+    fake.fail_next(LLMConfigurationError("provider API key is not set"))
 
     assert post_chat(client, "What is the forecast for next month?").status_code == 503
 

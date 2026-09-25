@@ -154,7 +154,7 @@ def _classify_llm_failure(exc: BaseException) -> ChatLLMError:
         if isinstance(current, LLMTimeoutError):
             return ChatTimeoutError("The language model request timed out.")
         if isinstance(current, LLMConfigurationError):
-            return ChatConfigurationError("AI is not configured. Set OPENAI_API_KEY and OPENAI_MODEL.")
+            return ChatConfigurationError("AI is not configured. Set the provider API key and model.")
         current = current.__cause__ or current.__context__
     return ChatLLMError("The language model provider failed to answer.")
 
